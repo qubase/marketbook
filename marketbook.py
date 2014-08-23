@@ -329,6 +329,8 @@ class Crawler(QWebView):
             self.listings = doc['listings']
             self.modelList = doc['modelList']
             self.log("Metadata loaded successfully")
+        else:
+            self.log("No metadata to load")
         if self.nextPage != None and self.isDuplicateListing(self.nextPage):
             self.log("Metadata NextPage is a duplicate listing, removing from URL queue")
             self.nextPage = None
