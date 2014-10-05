@@ -63,6 +63,11 @@ class Crawler(QWebView):
               cfg.get('mongo', 'db')
         client = MongoClient(uri)
         self.db = client[cfg.get('mongo', 'db')]
+        doc = self.db['meta.marketbook'].find_one()
+        if doc is not None:
+            self.round = doc['round'] if doc['round'] is not None else 0
+        else:
+            self.round = 0
 
     def _loadFinished(self):
         html = self.page().mainFrame().toHtml()
@@ -134,8 +139,15 @@ class Crawler(QWebView):
                 self.nextPage = self.nextList
             elif len(self.sitemap) > 0:
                 self.nextPage = self.sitemap.pop(0)
-            self.log("Next page chosen from meta data: " + self.nextPage)
-            self.load(QUrl(self.nextPage))
+            else: # end of round
+                self.log("End of round: " + str(self.round))
+                self.round += 1
+                self.nextPage = None
+                self.saveMetaData()
+                self.terminate("End of round")
+            if self.nextPage is not None:
+                self.log("Next page chosen from meta data: " + self.nextPage)
+                self.load(QUrl(self.nextPage))
 
     def parseSitemap(self, soup):
         self.log('Parsing sitemap: ' + self.url().toString())
@@ -288,7 +300,8 @@ class Crawler(QWebView):
 
     def run(self, url):
         self.log("Starting crawler")
-        self.nextPage = url
+        l = len(url)
+        self.nextPage = url[self.round % l]
         self.loadMetaData()
         if self.cfg.getboolean('main', 'gui'):
             self.show()
@@ -313,7 +326,8 @@ class Crawler(QWebView):
                'nextList': self.nextList,
                'sitemap': self.sitemap,
                'modelList': self.modelList,
-               'listings': self.listings}
+               'listings': self.listings,
+               'round': self.round}
         self.db['meta.marketbook'].remove()
         self.db['meta.marketbook'].insert(doc)
         self.log("Metadata saved")
@@ -322,7 +336,7 @@ class Crawler(QWebView):
         self.log("Loading metadata")
         doc = self.db['meta.marketbook'].find_one()
         if doc != None:
-            self.nextPage = doc['nextPage']
+            self.nextPage = doc['nextPage'] if doc['nextPage'] is not None else self.nextPage
             self.nextModified = doc['nextModified']
             self.nextList = doc['nextList']
             self.sitemap = doc['sitemap']
@@ -372,5 +386,5 @@ if __name__ == '__main__':
         QNetworkProxy.setApplicationProxy(QNetworkProxy(QNetworkProxy.HttpProxy, proxy.host(), proxy.port(), proxy.userName(), proxy.password()))
         print("Using application proxy:", proxy.toString())
     crawler = Crawler(app, cfg)
-    crawler.run('http://www.marketbook.de/drilldown/manulist.aspx?lp=MAT')
+    crawler.run(['http://www.marketbook.de/drilldown/manulist.aspx?lp=TH', 'http://www.marketbook.de/drilldown/manulist.aspx?lp=MAT'])
     sys.exit(app.exec_())
