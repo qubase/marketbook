@@ -166,8 +166,7 @@ class Crawler(QWebView):
                     self.modelList.append(self.baseUrl + href)
             random.shuffle(self.sitemap)
         else:
-            self.log('No manufacturers to parse in manufacturer list')
-            self.terminate()
+            self.terminate('No manufacturers to parse in manufacturer list')
 
     def parseModelList(self, soup):
         self.log('Parsing model list: ' + self.url().toString())
@@ -232,6 +231,8 @@ class Crawler(QWebView):
         if listingTitle != None:
             category = soup.title.string.strip()[(len(listingTitle.string) + 1):].replace(' zum Verkauf Zu MarketBook.de', '')
         info = soup.find("td", {"class": "info"})
+        if info == None:
+            info = soup.find("td", {"class": "infonoborder"})
         if info != None and info.h5 != None:
             company = info.h5.string
         specs = soup.find(id='specs')
