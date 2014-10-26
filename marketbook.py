@@ -340,9 +340,16 @@ class Crawler(QWebView):
             self.nextPage = doc['nextPage'] if doc['nextPage'] is not None else self.nextPage
             self.nextModified = doc['nextModified']
             self.nextList = doc['nextList']
-            self.sitemap = doc['sitemap']
-            self.listings = doc['listings']
-            self.modelList = doc['modelList']
+            self.sitemap = doc['sitemap'] if doc['sitemap'] is not None else []
+            self.listings = doc['listings'] if doc['listings'] is not None else []
+            self.modelList = doc['modelList'] if doc['modelList'] is not None else []
+
+            # if there are any links to process do not load the sitemap again
+            if len(self.sitemap) > 0 \
+                or len(self.modelList) > 0 \
+                or len(self.listings) > 0:
+                self.nextPage = None
+
             self.log("Metadata loaded successfully")
         else:
             self.log("No metadata to load")
