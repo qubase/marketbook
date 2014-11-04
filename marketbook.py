@@ -9,6 +9,7 @@ import random
 import time
 import re
 import traceback
+import subprocess
 from xml.etree import ElementTree as ET
 from configparser import  ConfigParser
 from PyQt4.QtGui import *
@@ -125,6 +126,11 @@ class Crawler(QWebView):
 
     def loadNextPage(self):
         time.sleep(self.cfg.sleep)
+
+        if self.cfg.getboolean('main', 'proxy'):
+            while not self.proxyActive():
+                time.sleep(1)
+
         if self.nextPage != None:
             self.log("Loading next page directly: " + self.nextPage)
             self.load(QUrl(self.nextPage))
@@ -148,6 +154,28 @@ class Crawler(QWebView):
             if self.nextPage is not None:
                 self.log("Next page chosen from meta data: " + self.nextPage)
                 self.load(QUrl(self.nextPage))
+
+    def proxyActive(self):
+        out = subprocess.Popen(['ps', 'aux'], stdout=subprocess.PIPE).communicate()[0]
+        tor, polipo = (False, False)
+        for line in out.split(b"\n"):
+            if b"/etc/init.d/tor restart" in line \
+                or b"/etc/init.d/tor restart" in line \
+                or b"/etc/init.d/tor stop" in line \
+                or b"/etc/init.d/tor reload" in line \
+                or b"/etc/init.d/tor force-reload" in line \
+                or b"/etc/init.d/polipo restart" in line \
+                or b"/etc/init.d/polipo stop" in line \
+                or b"/etc/init.d/polipo force-reload" in line:
+                self.log("Proxy inactive: " + line)
+                return False
+            if b"/usr/sbin/tor" in line:
+                self.log("Proxy: found Tor")
+                tor = True
+            if b"/usr/bin/polipo" in line:
+                self.log("Proxy: found Polipo")
+                polipo = True
+        return tor and polipo
 
     def parseSitemap(self, soup):
         self.log('Parsing sitemap: ' + self.url().toString())
