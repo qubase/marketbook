@@ -167,7 +167,7 @@ class Crawler(QWebView):
                 or b"/etc/init.d/polipo restart" in line \
                 or b"/etc/init.d/polipo stop" in line \
                 or b"/etc/init.d/polipo force-reload" in line:
-                self.log("Proxy inactive: " + line)
+                self.log("Proxy inactive")
                 return False
             if b"/usr/sbin/tor" in line:
                 self.log("Proxy: found Tor")
@@ -329,8 +329,7 @@ class Crawler(QWebView):
 
     def run(self, url):
         self.log("Starting crawler")
-        l = len(url)
-        self.nextPage = url[self.round % l]
+        self.nextPage = url[int(self.round) % len(url)]
         self.loadMetaData()
         if self.cfg.getboolean('main', 'gui'):
             self.show()
