@@ -104,7 +104,7 @@ class Crawler(QWebView):
             self.log("Page doesn't contain a title, considered not a finished page loading (expects redirection, ...)")
             self.log(html)
             self.noTitle += 1
-            if self.noTitle > 1 or html == '<html><head></head><body></body></html>':
+            if self.noTitle > 1 or "<html><head></head><body>" in html:
                 self.nextPage = None #not to get to the same No Title situation in case of immediate termination
                 self.nextModified = None
                 self.log("Too many No Title pages or a corrupt page, proceeding to the next page")
